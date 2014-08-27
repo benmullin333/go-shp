@@ -3,6 +3,7 @@ package shp
 import (
 	"encoding/binary"
 	"io"
+	"math"
 )
 
 type ShapeType int32
@@ -53,6 +54,62 @@ func (b *Box) ExtendWithPoint(p Point) {
 	if p.Y > b.MaxY {
 		b.MaxY = p.Y
 	}
+}
+
+func (box *Box) IncludesPoint(p Point) bool {
+	if p.X < box.MinX {
+		return false
+	}
+	if p.Y < box.MinY {
+		return false
+	}
+	if p.X > box.MaxX {
+		return false
+	}
+	if p.Y > box.MaxY {
+		return false
+	}
+	return true
+}
+
+func (poly *Polygon) IncludesPoint(p Point) bool {
+	var next_part_start, max_points, part_index, point_index int32
+	intersection_count := 0
+	if !poly.Box.IncludesPoint(p) {
+		return false
+	}
+	for part_index = 0; part_index < poly.NumParts; part_index++ {
+		next_part_start = part_index + 1
+		if next_part_start == poly.NumParts {
+			max_points = poly.NumPoints
+		} else {
+			max_points = poly.Parts[next_part_start]
+		}
+		for point_index = poly.Parts[part_index]; point_index < max_points-1; point_index++ {
+			if lineIntersection(&p, &poly.Points[point_index], &poly.Points[point_index+1]) {
+				intersection_count++
+			}
+		}
+	}
+	return intersection_count%2 != 0
+}
+
+func lineIntersection(p *Point, curr *Point, next *Point) bool {
+	// Cast ray from p.X towards the right
+	if (p.Y >= next.Y || p.Y <= curr.Y) &&
+		(p.Y >= curr.Y || p.Y <= next.Y) {
+		return false
+	}
+	if p.X >= math.Max(curr.X, next.X) ||
+		next.Y == curr.Y {
+		return false
+	}
+	// Find where the line intersects...
+	xint := (p.Y-curr.Y)*(next.X-curr.X)/(next.Y-curr.Y) + curr.X
+	if curr.X != next.X && p.X > xint {
+		return false
+	}
+	return true
 }
 
 // BBoxFromPoints returns the bounding box calculated

@@ -417,3 +417,29 @@ func TestReadMultipatch(t *testing.T) {
 	}
 	test_MultiPatch(t, "test_files/multipatch.shp", points, 1)
 }
+
+func TestPolyIntersection(t *testing.T) {
+	shapes := getShapes("test_files/tl_2014_us_state.shp", t)
+	west_virginia, ok := shapes[0].(*Polygon)
+	if !ok {
+		t.Fatal("Failed to type assert.")
+	}
+	if west_virginia.Box.IncludesPoint(Point{-70, 39}) {
+		t.Error("Point 0 failed in bbox test")
+	}
+	if west_virginia.Box.IncludesPoint(Point{-82.5, 2}) {
+		t.Error("Point 1 failed in bbox test")
+	}
+	if !west_virginia.Box.IncludesPoint(Point{-80, 40}) {
+		t.Error("Point 2 failed in bbox test")
+	}
+	if west_virginia.IncludesPoint(Point{-80, 40}) {
+		t.Error("Point 2 failed in polygon test")
+	}
+	if !west_virginia.Box.IncludesPoint(Point{-82, 39}) {
+		t.Error("Point 3 failed in bbox test")
+	}
+	if !west_virginia.IncludesPoint(Point{-82, 39}) {
+		t.Error("Point 3 failed in polygon test")
+	}
+}
